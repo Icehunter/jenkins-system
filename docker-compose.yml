@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - ./jenkins_data:/var/jenkins_home
+    deploy:
+      resources:
+        limits:
+          cpus: '8.0' # Maximum of 2 CPU cores
+        reservations:
+          cpus: '4.0' # Guaranteed 1 CPU core
+    restart: always
+
+  swarm-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - MASTER=http://jenkins:8080
+      - USERNAME=admin # Replace with your Jenkins admin username
+      - PASSWORD=11913fb989301342055a52048563f75a44 # Replace with your Jenkins admin password or API token
+      - NAME=swarm-agent
+      - LABELS=docker swarm linux
+      - EXECUTORS=2
+    depends_on:
+      - jenkins
+    deploy:
+      replicas: 10
+      resources:
+        limits:
+          cpus: '0.5' # Each agent gets at most 0.5 CPU cores
+        reservations:
+          cpus: '0.25' # Guaranteed 0.25 CPU cores for each agent
+    restart: always
